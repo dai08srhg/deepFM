@@ -1,7 +1,7 @@
 import abc
 import torch
 from train.model.models import FM, DeepFM
-from train.metrics import log_loss, pr_auc
+from train.metrics import logloss, pr_auc
 from torch import optim
 
 
@@ -54,7 +54,8 @@ class Trainer(abc.ABC):
         inputs = valid_X.to(self.device)
         with torch.no_grad():
             pred_probs = torch.sigmoid(model(inputs))
-        loss = log_loss(valid_y, pred_probs)
+        pred_probs = pred_probs.to('cpu').detach().numpy()
+        loss = logloss(valid_y, pred_probs)
         auc = pr_auc(valid_y, pred_probs)
         return loss, auc
     
