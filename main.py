@@ -6,27 +6,34 @@ import torch
 from torch import nn, optim
 
 def main():
+    # Load pandas dataframe
     df = pd.read_csv('data_path')
+    # Split train : valid : test = 0.5 : 0.25 : 0.25
     df_train, df_eval = train_test_split(df, test_size=0.5, train_size=0.5, random_state=48, shuffle=True)
     df_valid, df_test = train_test_split(df_eval, test_size=0.5, train_size=0.5, random_state=48, shuffle=True)
     
+    # Make dataset
     input_columns = list(df_train.columns)
     label_column = 'true_label'
     dataset = FMDataset(df_train, df_valid, df_test, input_columns, label_column)
 
+    # Settings
     loss_fn = nn.BCEWithLogitsLoss()
     optimizer = 'RMSprop'
     device = 'cpu'
     field_dims = dataset.field_dims
     hypara_dict = {'embed_rank': 10, 'field_dims': field_dims, 'mlp_dims': (64, 32), 'drop_out': 0.25}
 
+    # Make deepFM trainer
     trainer = DeepFMTrainer(loss_fn, optimizer, device, hypara_dict)
 
     train_loader = torch.utils.data.DataLoader(dataset, batch_size = 64, shuffle = True, num_workers = 2)
     valid_X, valid_y = dataset.get_valid()
 
+    # Train
     trainer.fit(train_loader, valid_X, valid_y, epochs=100)
 
+    # Predict test data
     test_X, test_y = dataset.get_test()
     pred_probs = trainer.predict(test_X)
 
